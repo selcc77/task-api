@@ -1,41 +1,33 @@
+const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./openapi.json");
-
-const express = require("express");
+const db = require("./database");
 
 const app = express();
 
 app.use(express.json());
 
-//creating databases to work with
+/* ---------------- GET ALL TASKS ---------------- */
 
-let tasks = [
-    {
-        id: 1,
-        title: "Study Node.js",
-        done: false
-    },
-    {
-        id: 2,
-        title: "Go to gym",
-        done: true
-    },
-    {
-        id: 3,
-        title: "Buy milk",
-        done: false
-    }
-];
+app.get("/tasks", (req, res) => {
 
-app.get("/tasks", (req,res) => {
+    const tasks = db.prepare(
+        "SELECT * FROM tasks"
+    ).all();
+
     res.json(tasks);
+
 });
+
+/* ---------------- GET ONE TASK ---------------- */
 
 app.get("/tasks/:id", (req, res) => {
 
     const id = Number(req.params.id);
 
-    const task = tasks.find(task => task.id === id);
+    const task = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(id);
 
     if (!task) {
         return res.status(404).json({
@@ -44,12 +36,13 @@ app.get("/tasks/:id", (req, res) => {
     }
 
     res.json(task);
+
 });
 
 
 app.post("/tasks", (req, res) => {
 
-    const title = req.body.title;
+    const { title } = req.body;
 
     if (!title) {
         return res.status(400).json({
@@ -57,54 +50,33 @@ app.post("/tasks", (req, res) => {
         });
     }
 
-    const newID = 
-        tasks.length > 0
-            ? Math.max(...tasks.map(task => task.id)) + 1
-            : 1;
-    const newTask = {
-        id: newId,
-        title: title,
-        done: false
-    };
+    const result = db.prepare(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)"
+    ).run(title, 0);
 
-    tasks.push(newTask);
+    const newTask = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(result.lastInsertRowid);
 
     res.status(201).json(newTask);
 
 });
 
-app.put("/tasks/:id", (req,res) => {
 
-    //reading id from url
+app.put("/tasks/:id", (req, res) => {
+
     const id = Number(req.params.id);
-
-    //finding the task
-    const task = tasks.find(task => task.id === id);
-
-    if(!task){
-        return res.status(404).json({
-           error: `Task ${id} not found` 
-        });
-    }
-    
     const { title, done } = req.body;
 
-    if(!title){
+    if (!title) {
         return res.status(400).json({
-            error: `Title is required`
+            error: "Title is required"
         });
     }
-    
-    task.title = title;
-    task.done = done;
 
-    res.json(task);
-});
-app.delete("/tasks/:id", (req, res) => {
-
-    const id = Number(req.params.id);
-
-    const task = tasks.find(task => task.id === id);
+    const task = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(id);
 
     if (!task) {
         return res.status(404).json({
@@ -112,11 +84,41 @@ app.delete("/tasks/:id", (req, res) => {
         });
     }
 
-    tasks = tasks.filter(task => task.id !== id);
+    db.prepare(
+        "UPDATE tasks SET title = ?, done = ? WHERE id = ?"
+    ).run(title, done, id);
+
+    const updatedTask = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(id);
+
+    res.json(updatedTask);
+
+});
+
+
+app.delete("/tasks/:id", (req, res) => {
+
+    const id = Number(req.params.id);
+
+    const task = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(id);
+
+    if (!task) {
+        return res.status(404).json({
+            error: `Task ${id} not found`
+        });
+    }
+
+    db.prepare(
+        "DELETE FROM tasks WHERE id = ?"
+    ).run(id);
 
     res.status(204).send();
 
 });
+
 
 app.use(
     "/docs",
@@ -124,7 +126,9 @@ app.use(
     swaggerUi.setup(swaggerDocument)
 );
 
-app.listen(3000, () => {
 
-    console.log("Server is running on port 3000");
+const PORT = 3000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
