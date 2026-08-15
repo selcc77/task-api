@@ -1,33 +1,24 @@
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./openapi.json");
-const db = require("./database");
-
+const taskRepository = require("./taskRepository");
 const app = express();
 
 app.use(express.json());
 
 /* ---------------- GET ALL TASKS ---------------- */
 
-app.get("/tasks", (req, res) => {
-
-    const tasks = db.prepare(
-        "SELECT * FROM tasks"
-    ).all();
-
+app.get("/tasks", async (req, res) => {
+    const tasks = await taskRepository.getAllTasks();
     res.json(tasks);
-
 });
 
-/* ---------------- GET ONE TASK ---------------- */
+/* ---------------- GET ONE TASK switching it to postegrosql---------------- */
 
-app.get("/tasks/:id", (req, res) => {
-
+app.get("/tasks/:id", async (req, res) => {
     const id = Number(req.params.id);
 
-    const task = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(id);
+    const task = await taskRepository.getTaskById(id);
 
     if (!task) {
         return res.status(404).json({
@@ -36,12 +27,10 @@ app.get("/tasks/:id", (req, res) => {
     }
 
     res.json(task);
-
 });
 
 
-app.post("/tasks", (req, res) => {
-
+app.post("/tasks", async (req, res) => {
     const { title } = req.body;
 
     if (!title) {
@@ -50,21 +39,13 @@ app.post("/tasks", (req, res) => {
         });
     }
 
-    const result = db.prepare(
-        "INSERT INTO tasks (title, done) VALUES (?, ?)"
-    ).run(title, 0);
-
-    const newTask = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(result.lastInsertRowid);
+    const newTask = await taskRepository.createTask(title);
 
     res.status(201).json(newTask);
-
 });
 
 
-app.put("/tasks/:id", (req, res) => {
-
+app.put("/tasks/:id", async (req, res) => {
     const id = Number(req.params.id);
     const { title, done } = req.body;
 
@@ -74,49 +55,30 @@ app.put("/tasks/:id", (req, res) => {
         });
     }
 
-    const task = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(id);
+    const updatedTask = await taskRepository.updateTask(id, title, done);
 
-    if (!task) {
+    if (!updatedTask) {
         return res.status(404).json({
             error: `Task ${id} not found`
         });
     }
 
-    db.prepare(
-        "UPDATE tasks SET title = ?, done = ? WHERE id = ?"
-    ).run(title, done, id);
-
-    const updatedTask = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(id);
-
     res.json(updatedTask);
-
 });
 
 
-app.delete("/tasks/:id", (req, res) => {
-
+app.delete("/tasks/:id", async (req, res) => {
     const id = Number(req.params.id);
 
-    const task = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(id);
+    const deletedTask = await taskRepository.deleteTask(id);
 
-    if (!task) {
+    if (!deletedTask) {
         return res.status(404).json({
             error: `Task ${id} not found`
         });
     }
 
-    db.prepare(
-        "DELETE FROM tasks WHERE id = ?"
-    ).run(id);
-
     res.status(204).send();
-
 });
 
 
