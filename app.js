@@ -5,6 +5,17 @@ const taskRepository = require("./taskRepository");
 const app = express();
 
 app.use(express.json());
+function validateId(req, res, next) {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({
+            error: "Invalid task ID"
+        });
+    }
+
+    next();
+}
 
 /* ---------------- GET ALL TASKS ---------------- */
 
@@ -15,7 +26,7 @@ app.get("/tasks", async (req, res) => {
 
 /* ---------------- GET ONE TASK switching it to postegrosql---------------- */
 
-app.get("/tasks/:id", async (req, res) => {
+app.get("/tasks/:id", validateId, async (req, res) => {
     const id = Number(req.params.id);
 
     const task = await taskRepository.getTaskById(id);
@@ -33,11 +44,11 @@ app.get("/tasks/:id", async (req, res) => {
 app.post("/tasks", async (req, res) => {
     const { title } = req.body;
 
-    if (!title) {
-        return res.status(400).json({
-            error: "Title is required"
-        });
-    }
+    if (typeof title !== "string" || title.trim() === "") {
+    return res.status(400).json({
+        error: "Title must be a non-empty string"
+    });
+}
 
     const newTask = await taskRepository.createTask(title);
 
@@ -45,15 +56,21 @@ app.post("/tasks", async (req, res) => {
 });
 
 
-app.put("/tasks/:id", async (req, res) => {
+app.put("/tasks/:id", validateId, async (req, res) => {
     const id = Number(req.params.id);
     const { title, done } = req.body;
 
-    if (!title) {
-        return res.status(400).json({
-            error: "Title is required"
-        });
-    }
+    if (typeof title !== "string" || title.trim() === "") {
+    return res.status(400).json({
+        error: "Title must be a non-empty string"
+    });
+}
+
+if (typeof done !== "boolean") {
+    return res.status(400).json({
+        error: "Done must be a boolean"
+    });
+}
 
     const updatedTask = await taskRepository.updateTask(id, title, done);
 
@@ -67,7 +84,7 @@ app.put("/tasks/:id", async (req, res) => {
 });
 
 
-app.delete("/tasks/:id", async (req, res) => {
+app.delete("/tasks/:id", validateId, async (req, res) => {
     const id = Number(req.params.id);
 
     const deletedTask = await taskRepository.deleteTask(id);
@@ -88,7 +105,13 @@ app.use(
     swaggerUi.setup(swaggerDocument)
 );
 
+app.use((err, req, res, next) => {
+    console.error(err);
 
+    res.status(500).json({
+        error: "Internal server error"
+    });
+});
 const PORT = 3000;
 
 app.listen(PORT, () => {

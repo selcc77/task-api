@@ -29,7 +29,7 @@ async function createTask(title) {
 async function updateTask(id, title, done) {
     const result = await pool.query(
         "UPDATE tasks SET title = $1, done = $2 WHERE id = $3 RETURNING *",
-        [title, done, id]
+        [title, done ? 1 : 0, id]
     );
 
     return result.rows[0];
