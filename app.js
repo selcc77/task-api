@@ -1,8 +1,19 @@
+require("dotenv").config();
+
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./openapi.json");
 const taskRepository = require("./taskRepository");
+const { createClient } = require("@supabase/supabase-js");
+
 const app = express();
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+);
+
+app.use(express.json());
 
 app.use(express.json());
 function validateId(req, res, next) {
@@ -112,11 +123,12 @@ app.use((err, req, res, next) => {
         error: "Internal server error"
     });
 });
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
+        console.log("Connected to Supabase");
     });
 }
 
