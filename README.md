@@ -1,29 +1,32 @@
-# Task API with PostgreSQL
+# Task API
 
-A simple RESTful Task Management API built with **Node.js**, **Express**, and **PostgreSQL**. This project demonstrates full CRUD (Create, Read, Update, Delete) operations with persistent data storage in a PostgreSQL database running inside Docker.
+A RESTful Task Management API built with **Node.js**, **Express**, and **PostgreSQL**. The project implements full CRUD operations, input validation, Swagger documentation, Dockerized PostgreSQL, and automated API testing with Jest and Supertest.
 
 ## Features
 
-- View all tasks
-- View a single task by ID
-- Create a new task
-- Update an existing task
+- Get all tasks
+- Get a task by ID
+- Create a task
+- Update a task
 - Delete a task
-- Persistent data storage using PostgreSQL
-- PostgreSQL running in Docke
-- Database connection using `pg`
+- Input validation
+- PostgreSQL database
+- PostgreSQL running in Docker
+- Swagger API documentation
+- Automated API tests with Jest and Supertest
 - Environment-based database configuration
-- Interactive API documentation with Swagger
 
-## Technologies Used
+## Technologies
 
 - Node.js
 - Express.js
 - PostgreSQL
 - Docker
-- `pg` (node-postgres)
-- dotenv
+- `pg`
+- Jest
+- Supertest
 - Swagger UI
+- Git & GitHub
 
 ## Project Structure
 
@@ -34,9 +37,10 @@ task-api/
 ├── database.js
 ├── taskRepository.js
 ├── schema.sql
+├── test-db.js
+├── app.test.js
 ├── openapi.json
+├── .env.example
 ├── package.json
 ├── package-lock.json
-├── .env.example
-├── .gitignore
 └── README.md
